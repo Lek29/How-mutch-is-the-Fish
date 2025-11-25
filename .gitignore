@@ -2,6 +2,7 @@
 *.pyc
 *.pyo
 *.pyd
+.idea
 __pycache__/
 *.egg-info/
 
