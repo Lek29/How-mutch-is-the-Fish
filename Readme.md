@@ -38,7 +38,7 @@
 ```
 3. Создайте файл .env в корневой папке с следующим содержимым:
 ```
-BOT_TOKEN=ваш_токен_бота_из_Telegram
+TG_BOT_TOKEN=ваш_токен_бота_из_Telegram
 STRAPI_URL=http://localhost:1337
 STRAPI_TOKEN=ваш_API_токен_из_Strapi
 ```

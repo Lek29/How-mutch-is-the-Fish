@@ -7,13 +7,13 @@ from telegram.ext import CallbackContext
 
 from strapi_api import (STRAPI_TOKEN, STRAPI_URL, add_to_cart,
                         delete_cart_item, get_cart_by_user)
-from utils import build_products_keyboard, edit_or_send, r
+from utils import build_products_keyboard, edit_or_send, get_redis
 
+redis_client = get_redis()
 
 def handle_message(update: Update, context: CallbackContext):
-    from utils import r
     user_id = update.effective_user.id
-    state = r.get(user_id)
+    state = redis_client.get(user_id)
     if state and state.decode('utf-8') == 'WAITING_EMAIL':
         email = update.message.text
         print(f'Получена почта от пользователя {user_id}: {email}')
@@ -31,14 +31,14 @@ def handle_message(update: Update, context: CallbackContext):
         except Exception as e:
             print(f'Ошибка создания клиента: {e}')
             update.message.reply_text('Ошибка сохранения почты. Попробуйте позже.')
-        r.delete(user_id)
+        redis_client.delete(user_id)
     else:
         update.message.reply_text('Я не понимаю это сообщение. Используйте меню.')
 
 def handle_pay(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
-    r.set(query.from_user.id, 'WAITING_EMAIL')
+    redis_client.set(query.from_user.id, 'WAITING_EMAIL')
     query.edit_message_text('Введите вашу почту для оформления заказа.')
 
 

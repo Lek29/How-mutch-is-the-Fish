@@ -4,8 +4,10 @@ from telegram.ext import (CallbackQueryHandler, CommandHandler, Filters,
 from handlers import (handle_add_to_cart, handle_back, handle_menu,
                       handle_message, handle_pay, handle_remove_item,
                       handle_show_cart, handle_to_menu, start)
-from utils import tg_token
+from utils import get_tg_token
 
+
+tg_token = get_tg_token()
 
 def main():
     updater = Updater(tg_token)

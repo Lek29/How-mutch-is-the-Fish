@@ -2,7 +2,13 @@ import time
 
 import requests
 
-from utils import STRAPI_TOKEN, STRAPI_URL
+from utils import get_strapi_url, get_strapi_token, get_redis
+
+
+
+STRAPI_URL = get_strapi_url()
+STRAPI_TOKEN = get_strapi_token()
+redis = get_redis()
 
 
 def delete_cart_item(document_id: str):
@@ -33,9 +39,9 @@ def add_to_cart(user_id: int, product_document_id: str, quantity: float = 1.0):
     try:
         url = f'{STRAPI_URL}/api/products'
         params = {'filters[documentId][$eq]': product_document_id}
-        r = requests.get(url, params=params, headers=headers, timeout=10)
-        r.raise_for_status()
-        arr = r.json().get('data', [])
+        response = requests.get(url, params=params, headers=headers, timeout=10)
+        response.raise_for_status()
+        arr = response.json().get('data', [])
         if not arr:
             print('Товар с documentId не найден:', product_document_id)
             return False
@@ -78,8 +84,8 @@ def get_cart_by_user(user_id: int):
     try:
         resp = requests.get(url, params=params, headers=headers, timeout=10)
         resp.raise_for_status()
-        data = resp.json().get('data', [])
-        return data[0] if data else None
+        cart_list = resp.json().get('data', [])
+        return cart_list[0] if cart_list else None
     except Exception as e:
         print('Ошибка получения корзины:', e)
         return None

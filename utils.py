@@ -2,14 +2,27 @@ import redis
 from environs import Env
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-env = Env()
-env.read_env('.env')
 
-tg_token = env.str('BOT_TOKEN')
-STRAPI_URL: str = env.str('STRAPI_URL', 'http://localhost:1337')
-STRAPI_TOKEN = env.str('STRAPI_TOKEN', '')
+def get_env():
+    env = Env()
+    env.read_env('.env')
+    return env
 
-r = redis.Redis(host='localhost', port=6379, db=0)
+
+def get_tg_token():
+    return get_env().str('TG_BOT_TOKEN')
+
+
+def get_strapi_url():
+    return get_env().str('STRAPI_URL', 'http://localhost:1337')
+
+
+def get_strapi_token():
+    return get_env().str('STRAPI_TOKEN', '')
+
+
+def get_redis():
+    return redis.Redis(host='localhost', port=6379, db=0)
 
 
 def edit_or_send(query, context, text, reply_markup=None):
