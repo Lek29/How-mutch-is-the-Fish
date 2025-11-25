@@ -1,0 +1,25 @@
+# Python-specific
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.egg-info/
+
+# Virtual environments
+.venv/
+
+# Environment files
+.env
+
+# Logs and temporary files
+*.log
+*.tmp
+*~
+
+# Strapi-specific
+node_modules/
+.strapi/
+.cache/
+
+# Redis (if any)
+dump.rdb
