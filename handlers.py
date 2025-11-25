@@ -1,13 +1,13 @@
 import io
-import requests
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+import requests
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext
-from utils import build_products_keyboard, edit_or_send
-from strapi_api import get_cart_by_user, delete_cart_item, add_to_cart
-from strapi_api import STRAPI_URL, STRAPI_TOKEN
-from utils import r
+
+from strapi_api import (STRAPI_TOKEN, STRAPI_URL, add_to_cart,
+                        delete_cart_item, get_cart_by_user)
+from utils import build_products_keyboard, edit_or_send, r
 
 
 def handle_message(update: Update, context: CallbackContext):

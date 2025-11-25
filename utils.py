@@ -1,6 +1,7 @@
+import redis
 from environs import Env
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-import redis
+
 env = Env()
 env.read_env('.env')
 
@@ -22,7 +23,7 @@ def edit_or_send(query, context, text, reply_markup=None):
         except Exception as e:
             print("Ошибка отправки сообщения в _edit_or_send:", e)
 
-def uild_products_keyboard(products, include_cart_button=False):
+def build_products_keyboard(products, include_cart_button=False):
     keyboard = []
 
     for product in products:

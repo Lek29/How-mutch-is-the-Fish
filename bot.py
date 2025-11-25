@@ -1,7 +1,10 @@
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler,Filters
+from telegram.ext import (CallbackQueryHandler, CommandHandler, Filters,
+                          MessageHandler, Updater)
+
+from handlers import (handle_add_to_cart, handle_back, handle_menu,
+                      handle_message, handle_pay, handle_remove_item,
+                      handle_show_cart, handle_to_menu, start)
 from utils import tg_token
-from handlers import start, handle_menu, handle_add_to_cart, handle_back, handle_show_cart, handle_remove_item, \
-    handle_to_menu, handle_pay, handle_message
 
 
 def main():

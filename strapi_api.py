@@ -2,7 +2,8 @@ import time
 
 import requests
 
-from utils import STRAPI_URL, STRAPI_TOKEN
+from utils import STRAPI_TOKEN, STRAPI_URL
+
 
 def delete_cart_item(document_id: str):
     url = f"{STRAPI_URL}/api/cart-items/{document_id}"
