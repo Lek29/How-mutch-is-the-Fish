@@ -13,17 +13,18 @@ def main():
 
     dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
 
-    dp.add_handler(CallbackQueryHandler(handle_remove_item, pattern=r"^remove_.+$"))
-    dp.add_handler(CallbackQueryHandler(handle_to_menu, pattern=r"^to_menu$"))
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CallbackQueryHandler(handle_add_to_cart, pattern=r"^add_"))
-    dp.add_handler(CallbackQueryHandler(handle_back, pattern="^back$"))
-    dp.add_handler(CallbackQueryHandler(handle_show_cart, pattern="^cart$"))
-    dp.add_handler(CallbackQueryHandler(handle_pay, pattern=r"^pay$"))
+    dp.add_handler(CallbackQueryHandler(handle_remove_item, pattern=r'^remove_.+$'))
+    dp.add_handler(CallbackQueryHandler(handle_to_menu, pattern=r'^to_menu$'))
+    dp.add_handler(CommandHandler('start', start))
+    dp.add_handler(CallbackQueryHandler(handle_add_to_cart, pattern=r'^add_'))
+    dp.add_handler(CallbackQueryHandler(handle_back, pattern='^back$'))
+    dp.add_handler(CallbackQueryHandler(handle_show_cart, pattern='^cart$'))
+    dp.add_handler(CallbackQueryHandler(handle_pay, pattern=r'^pay$'))
     dp.add_handler(CallbackQueryHandler(handle_menu))
-    print("Бот запущен с товарами из Strapi")
+    print('Бот запущен с товарами из Strapi')
     updater.start_polling()
     updater.idle()
+
 
 if __name__ == '__main__':
     main()

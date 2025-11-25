@@ -23,3 +23,5 @@ node_modules/
 
 # Redis (if any)
 dump.rdb
+
+.flake8
