@@ -1,3 +1,6 @@
+import sys
+import traceback
+
 from telegram.ext import (CallbackQueryHandler, CommandHandler, Filters,
                           MessageHandler, Updater)
 
@@ -7,6 +10,11 @@ from handlers import (handle_add_to_cart, handle_back, handle_menu,
                       handle_message, handle_pay, handle_remove_item,
                       handle_show_cart, handle_to_menu, start)
 from utils import get_tg_token
+
+
+def global_error_handler(update, context):
+    print("Необработанная ошибка в handler:", file=sys.stderr)
+    traceback.print_exception(type(context.error), context.error, context.error.__traceback__)
 
 
 def main():
@@ -31,6 +39,8 @@ def main():
         return
     dp = updater.dispatcher
 
+    dp.add_error_handler(global_error_handler)
+
     dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
 
     dp.add_handler(CallbackQueryHandler(handle_remove_item, pattern=r'^remove_.+$'))
@@ -41,8 +51,6 @@ def main():
     dp.add_handler(CallbackQueryHandler(handle_show_cart, pattern='^cart$'))
     dp.add_handler(CallbackQueryHandler(handle_pay, pattern=r'^pay$'))
     dp.add_handler(CallbackQueryHandler(handle_menu))
-
-    print('Бот запущен с товарами из Strapi')
 
     try:
         updater.start_polling()

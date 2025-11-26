@@ -17,7 +17,7 @@ def delete_cart_item(document_id: str):
     if STRAPI_TOKEN:
         headers['Authorization'] = f'Bearer {STRAPI_TOKEN}'
     resp = requests.delete(url, headers=headers, timeout=10)
-    resp.raise_for_status()  # выброс исключения на неуспех
+    resp.raise_for_status()
 
     if resp.ok:
         return True, 'Удалено'

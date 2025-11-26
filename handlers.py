@@ -17,8 +17,6 @@ def handle_message(update: Update, context: CallbackContext):
     state = redis_client.get(user_id)
     if state and state.decode('utf-8') == 'WAITING_EMAIL':
         email = update.message.text
-        print(f'Получена почта от пользователя {user_id}: {email}')
-
         url = f'{STRAPI_URL}/api/clients'
         headers = {'Content-Type': 'application/json'}
         if STRAPI_TOKEN:
@@ -28,7 +26,6 @@ def handle_message(update: Update, context: CallbackContext):
         resp.raise_for_status()
 
         client_id = resp.json()['data']['id']
-        print(f'Клиент создан в Strapi: ID {client_id}')
 
         update.message.reply_text(
             f'Ваша почта {email} получена и сохранена. Мы свяжемся с вами!'
@@ -123,6 +120,7 @@ def handle_to_menu(update: Update, context: CallbackContext):
 
 
 def start(update: Update, context: CallbackContext):
+
     if update.message:
         chat = update.message.chat
         chat_id = update.message.chat_id
@@ -134,7 +132,6 @@ def start(update: Update, context: CallbackContext):
     else:
         return
     user_id = update.effective_user.id
-    print(f'Пользователь: {user_id}')
     products = get_products()
     if not products:
         if reply_target:
@@ -148,7 +145,6 @@ def start(update: Update, context: CallbackContext):
         reply_target.reply_text(text, reply_markup=reply_markup)
     else:
         context.bot.send_message(chat_id=chat_id, text=text, reply_markup=reply_markup)
-
 
 def handle_menu(update: Update, context: CallbackContext):
     query = update.callback_query
@@ -210,13 +206,10 @@ def handle_menu(update: Update, context: CallbackContext):
 def handle_back(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
-    try:
-        context.bot.delete_message(
-            chat_id=query.message.chat_id,
-            message_id=query.message.message_id
-        )
-    except Exception as e:
-        print('Не удалось удалить сообщение:', e)
+    context.bot.delete_message(
+        chat_id=query.message.chat_id,
+        message_id=query.message.message_id
+    )
     start(update, context)
 
 
