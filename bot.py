@@ -9,7 +9,7 @@ from telegram.error import TelegramError, Unauthorized
 from handlers import (handle_add_to_cart, handle_back, handle_menu,
                       handle_message, handle_pay,
                       handle_show_cart, handle_to_menu, start, handle_remove_item)
-from utils import get_tg_token, get_strapi_token, get_strapi_url
+from utils import get_tg_token, get_strapi_token, get_strapi_url, get_redis
 from functools import partial
 
 
@@ -22,6 +22,7 @@ def main():
     tg_token = get_tg_token()
     strapi_token = get_strapi_token()
     strapi_url = get_strapi_url()
+    redis_client = get_redis()
 
     try:
         updater = Updater(tg_token)
@@ -71,7 +72,9 @@ def main():
             strapi_url=strapi_url,
             strapi_token=strapi_token),
         pattern='^cart$'))
-    dp.add_handler(CallbackQueryHandler(handle_pay, pattern=r'^pay$'))
+    dp.add_handler(CallbackQueryHandler(
+        partial(handle_pay, redis_client=redis_client)
+        , pattern=r'^pay$'))
     dp.add_handler(CallbackQueryHandler(handle_menu))
 
     try:

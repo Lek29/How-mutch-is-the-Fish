@@ -12,7 +12,7 @@ def delete_cart_item(document_id: str,  strapi_url: str, strapi_token: str):
     resp.raise_for_status()
 
     if resp.ok:
-        return True, 'Удалено'
+        return True
 
     return False, f'Ошибка удаления: {resp.status_code} {resp.text}'
 

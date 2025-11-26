@@ -7,8 +7,8 @@ from telegram.ext import CallbackContext
 
 from strapi_api import (add_to_cart,
                         delete_cart_item, get_cart_by_user)
-from utils import build_products_keyboard, get_redis, edit_message, send_message, build_products_keyboard, \
-    build_products_menu
+from utils import get_redis, edit_message, send_message, build_products_keyboard
+
 
 redis_client = get_redis()
 
@@ -33,11 +33,15 @@ def handle_message(update: Update, context: CallbackContext, strapi_url: str, st
         )
 
 
-def handle_pay(update: Update, context: CallbackContext):
+def handle_pay(update: Update, context: CallbackContext, redis_client):
     query = update.callback_query
     query.answer()
     redis_client.set(query.from_user.id, 'WAITING_EMAIL')
-    query.edit_message_text('Введите вашу почту для оформления заказа.')
+
+    query.edit_message_caption(
+        caption='Введите вашу почту для оформления заказа.',
+        reply_markup=None
+    )
 
 
 def handle_show_cart(update: Update, context: CallbackContext, strapi_url: str, strapi_token: str):
@@ -89,14 +93,18 @@ def handle_remove_item(update: Update, context: CallbackContext, strapi_url, str
 
     _, item_id = query.data.split("_", 1)
 
-    success, msg = delete_cart_item(
+    success = delete_cart_item(
         item_id,
         strapi_url=strapi_url,
         strapi_token=strapi_token
     )
+    query.edit_message_caption(
+        caption="Товар удалён!",
+        reply_markup=None
+    )
 
     if not success:
-        raise RuntimeError(f"Ошибка удаления: {msg}")
+        raise RuntimeError("Ошибка удаления")
 
     return handle_show_cart(update, context, strapi_url=strapi_url, strapi_token=strapi_token)
 
@@ -133,7 +141,6 @@ def handle_to_menu(update: Update, context: CallbackContext):
 
 
 def start(update: Update, context: CallbackContext):
-
     if update.message:
         chat = update.message.chat
         chat_id = update.message.chat_id

@@ -1,4 +1,5 @@
 import redis
+import requests
 from environs import Env
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
@@ -57,6 +58,7 @@ def build_products_keyboard(products, include_cart_button=False):
             InlineKeyboardButton('Моя корзина', callback_data='cart')
         ])
     return InlineKeyboardMarkup(keyboard)
+
 
 def build_products_menu(strapi_url, strapi_token):
     headers = {'Content-Type': 'application/json'}
