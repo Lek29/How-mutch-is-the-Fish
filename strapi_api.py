@@ -19,7 +19,7 @@ def delete_cart_item(document_id: str):
     resp = requests.delete(url, headers=headers, timeout=10)
     resp.raise_for_status()  # выброс исключения на неуспех
 
-    if resp.status_code in (200, 204):
+    if resp.ok:
         return True, 'Удалено'
 
     return False, f'Ошибка удаления: {resp.status_code} {resp.text}'
