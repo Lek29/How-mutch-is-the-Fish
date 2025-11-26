@@ -22,20 +22,23 @@ def get_strapi_token():
 
 
 def get_redis():
-    return redis.Redis(host='localhost', port=6379, db=0)
+    env = get_env()
+
+    REDIS_HOST = env.str('REDIS_HOST', 'localhost')
+    REDIS_PORT = env.int('REDIS_PORT', 6379)
+    REDIS_DB = env.int('REDIS_DB', 0)
+
+    return redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
 
 
-def edit_or_send(query, context, text, reply_markup=None):
-    try:
-        if getattr(query.message, 'photo', None) or getattr(query.message, 'caption', None):
-            query.edit_message_caption(caption=text, reply_markup=reply_markup)
-        else:
-            query.edit_message_text(text=text, reply_markup=reply_markup)
-    except Exception:
-        try:
-            context.bot.send_message(chat_id=query.message.chat_id, text=text, reply_markup=reply_markup)
-        except Exception as e:
-            print('Ошибка отправки сообщения в _edit_or_send:', e)
+def edit_message(query, text, reply_markup=None):
+    if getattr(query.message, 'photo', None) or getattr(query.message, 'caption', None):
+        return query.edit_message_caption(caption=text, reply_markup=reply_markup)
+    return query.edit_message_text(text=text, reply_markup=reply_markup)
+
+
+def send_message(bot, chat_id, text, reply_markup=None):
+    return bot.send_message(chat_id=chat_id, text=text, reply_markup=reply_markup)
 
 
 def build_products_keyboard(products, include_cart_button=False):

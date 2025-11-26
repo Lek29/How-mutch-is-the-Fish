@@ -39,9 +39,13 @@
 3. Создайте файл .env в корневой папке с следующим содержимым:
 ```
 TG_BOT_TOKEN=ваш_токен_бота_из_Telegram
+STRREDIS_HOST='localhost'
+REDIS_PORT=6379
+REDIS_DB=0
 STRAPI_URL=http://localhost:1337
-STRAPI_TOKEN=ваш_API_токен_из_Strapi
+
 ```
+* или внесите ваши настроки.
 ## Запуск Strapi v5
 **Strapi** — CMS для `backend`. Если Strapi не установлен, следуйте шагам:
 

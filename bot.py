@@ -1,16 +1,34 @@
 from telegram.ext import (CallbackQueryHandler, CommandHandler, Filters,
                           MessageHandler, Updater)
 
+from telegram.error import TelegramError, Unauthorized
+
 from handlers import (handle_add_to_cart, handle_back, handle_menu,
                       handle_message, handle_pay, handle_remove_item,
                       handle_show_cart, handle_to_menu, start)
 from utils import get_tg_token
 
 
-tg_token = get_tg_token()
-
 def main():
-    updater = Updater(tg_token)
+    tg_token = get_tg_token()
+
+    try:
+        updater = Updater(tg_token)
+        bot = updater.bot
+        bot.get_me()
+        print('Токен корректный, бот запускается...')
+
+    except Unauthorized:
+        print('Ошибка: неверный TOKEN Telegram. Проверь переменную окружения.')
+        return
+
+    except TelegramError as e:
+        print(f'Ошибка при инициализации бота: {e}')
+        return
+
+    except Exception as e:
+        print(f'Неизвестная ошибка при создании бота: {e}')
+        return
     dp = updater.dispatcher
 
     dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
@@ -23,8 +41,20 @@ def main():
     dp.add_handler(CallbackQueryHandler(handle_show_cart, pattern='^cart$'))
     dp.add_handler(CallbackQueryHandler(handle_pay, pattern=r'^pay$'))
     dp.add_handler(CallbackQueryHandler(handle_menu))
+
     print('Бот запущен с товарами из Strapi')
-    updater.start_polling()
+
+    try:
+        updater.start_polling()
+        updater.idle()
+
+    except TelegramError as e:
+        print(f'Telegram API ошибка: {e}')
+
+    except Exception as e:
+        print(f"Фатальная ошибка в основном цикле: {e}")
+
+
     updater.idle()
 
 

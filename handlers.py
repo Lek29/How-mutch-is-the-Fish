@@ -2,14 +2,15 @@ import io
 
 import requests
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.error import BadRequest
+
 from telegram.ext import CallbackContext
 
 from strapi_api import (STRAPI_TOKEN, STRAPI_URL, add_to_cart,
                         delete_cart_item, get_cart_by_user)
-from utils import build_products_keyboard, edit_or_send, get_redis
+from utils import build_products_keyboard,  get_redis, edit_message,send_message
 
 redis_client = get_redis()
+
 
 def handle_message(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
@@ -23,17 +24,16 @@ def handle_message(update: Update, context: CallbackContext):
         if STRAPI_TOKEN:
             headers['Authorization'] = f'Bearer {STRAPI_TOKEN}'
         payload = {'data': {'email': email}}
-        try:
-            resp = requests.post(url, json=payload, headers=headers, timeout=10)
-            resp.raise_for_status()
-            print(f'Клиент создан в Strapi: ID {resp.json()["data"]["id"]}')
-            update.message.reply_text(f'Ваша почта {email} получена и сохранена. Мы свяжемся с вами!')
-        except Exception as e:
-            print(f'Ошибка создания клиента: {e}')
-            update.message.reply_text('Ошибка сохранения почты. Попробуйте позже.')
-        redis_client.delete(user_id)
-    else:
-        update.message.reply_text('Я не понимаю это сообщение. Используйте меню.')
+        resp = requests.post(url, json=payload, headers=headers, timeout=10)
+        resp.raise_for_status()
+
+        client_id = resp.json()['data']['id']
+        print(f'Клиент создан в Strapi: ID {client_id}')
+
+        update.message.reply_text(
+            f'Ваша почта {email} получена и сохранена. Мы свяжемся с вами!'
+        )
+
 
 def handle_pay(update: Update, context: CallbackContext):
     query = update.callback_query
@@ -48,14 +48,12 @@ def handle_show_cart(update: Update, context: CallbackContext):
     user_id = query.from_user.id
     cart = get_cart_by_user(user_id)
     if not cart:
-        edit_or_send(query, context, 'У вас пока нет корзины или она пустая.')
-        return
+        return send_message(context.bot, query.message.chat_id, 'У вас пока нет корзины или она пустая.')
 
     cart_items = cart.get('cart_items', [])
 
     if not cart_items or len(cart_items) == 0:
-        edit_or_send(query, context, 'Ваша корзина пустая.')
-        return
+        return send_message(context.bot, query.message.chat_id, 'Ваша корзина пустая.')
 
     lines = ['Ваша корзина:\n']
     keyboard = []
@@ -84,31 +82,22 @@ def handle_show_cart(update: Update, context: CallbackContext):
 
     text = "\n".join(lines)
     reply_markup = InlineKeyboardMarkup(keyboard)
-    edit_or_send(query, context, text, reply_markup)
+    edit_message(query, text, reply_markup)
 
 
 def handle_remove_item(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
-    data = query.data
-    try:
-        _, item_id_str = data.split("_", 1)
-        item_id = item_id_str
-    except Exception:
-        try:
-            query.edit_message_text('Некорректный идентификатор для удаления.')
-        except Exception:
-            context.bot.send_message(chat_id=query.message.chat_id, text='Некорректный идентификатор для удаления.')
-        return
+
+    _, item_id = query.data.split("_", 1)
+
     success, msg = delete_cart_item(item_id)
+
     if not success:
-        print(f'Ошибка при удалении cart-item {item_id}: {msg}')
-        try:
-            query.edit_message_text('Не удалось удалить позицию: ' + msg)
-        except Exception:
-            context.bot.send_message(chat_id=query.message.chat_id, text='Не удалось удалить позицию: ' + msg)
-        return
-    handle_show_cart(update, context)
+        raise RuntimeError(f"Ошибка удаления: {msg}")
+
+    return handle_show_cart(update, context)
+
 
 
 def handle_add_to_cart(update: Update, context: CallbackContext):
@@ -129,15 +118,9 @@ def handle_add_to_cart(update: Update, context: CallbackContext):
         )
 
 def handle_to_menu(update: Update, context: CallbackContext):
-    query = update.callback_query
-    try:
-        query.answer()
-    except BadRequest as e:
-        if 'query is too old' in str(e):
-            pass
-        else:
-            raise
+    update.callback_query.answer()
     start(update, context)
+
 
 def start(update: Update, context: CallbackContext):
     if update.message:
@@ -170,54 +153,51 @@ def start(update: Update, context: CallbackContext):
 def handle_menu(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
+
     user_id = query.from_user.id
     document_id = query.data
+
     product = get_product_by_id(document_id)
     if not product:
-        query.edit_message_text('Товар не найден.')
-        return
+        raise LookupError("Товар не найден")
+
     title = product.get('title', '')
     description = product.get('description', '')
     price = product.get('price', '')
-    image_url = None
+
     image = product.get('image')
+    image_url = None
     if image and image.get('url'):
         image_url = 'http://localhost:1337' + image['url']
+
     caption = f'*{title}*\n\n{description}\n\n *Цена:* {price} ₽'
+
     keyboard = [
         [InlineKeyboardButton('В корзину', callback_data=f'add_{document_id}')],
         [InlineKeyboardButton('К списку', callback_data='back')],
-        [InlineKeyboardButton('Моя корзина', callback_data='cart')]
+        [InlineKeyboardButton('Моя корзина', callback_data='cart')],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    try:
-        context.bot.delete_message(
-            chat_id=query.message.chat_id,
-            message_id=query.message.message_id
-        )
-    except Exception as e:
-        print('Delete error:', e)
+
+    context.bot.delete_message(
+        chat_id=query.message.chat_id,
+        message_id=query.message.message_id
+    )
+
     if image_url:
-        try:
-            img_response = requests.get(image_url)
-            img_response.raise_for_status()
-            img_data = io.BytesIO(img_response.content)
-            img_data.name = 'product.jpg'
-            context.bot.send_photo(
-                chat_id=query.message.chat_id,
-                photo=img_data,
-                caption=caption,
-                parse_mode='Markdown',
-                reply_markup=reply_markup
-            )
-        except Exception as e:
-            print('Ошибка загрузки фото:', e)
-            context.bot.send_message(
-                chat_id=query.message.chat_id,
-                text=caption + '\n\n_Картинка не загрузилась_',
-                parse_mode='Markdown',
-                reply_markup=reply_markup
-            )
+        img_response = requests.get(image_url)
+        img_response.raise_for_status()
+
+        img_data = io.BytesIO(img_response.content)
+        img_data.name = 'product.jpg'
+
+        context.bot.send_photo(
+            chat_id=query.message.chat_id,
+            photo=img_data,
+            caption=caption,
+            parse_mode='Markdown',
+            reply_markup=reply_markup
+        )
     else:
         context.bot.send_message(
             chat_id=query.message.chat_id,
@@ -242,25 +222,19 @@ def handle_back(update: Update, context: CallbackContext):
 
 def get_products():
     url = 'http://localhost:1337/api/products'
-    params = {
-        'populate': 'image'
-    }
-    try:
-        response = requests.get(url, params=params)
-        response.raise_for_status()
-        return response.json()['data']
-    except Exception as e:
-        print('Ошибка API:', e)
-        return []
+    params = {'populate': 'image'}
+
+    response = requests.get(url, params=params, timeout=10)
+    response.raise_for_status()
+
+    return response.json()['data']
 
 
 def get_product_by_id(document_id):
     url = f'http://localhost:1337/api/products/{document_id}'
     params = {'populate': 'image'}
-    try:
-        response = requests.get(url, params=params)
-        response.raise_for_status()
-        return response.json()['data']
-    except Exception as e:
-        print('Ошибка товара:', e)
-        return None
+
+    response = requests.get(url, params=params, timeout=10)
+    response.raise_for_status()
+
+    return response.json()['data']
