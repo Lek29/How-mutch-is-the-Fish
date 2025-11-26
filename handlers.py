@@ -5,22 +5,23 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 
 from telegram.ext import CallbackContext
 
-from strapi_api import (STRAPI_TOKEN, STRAPI_URL, add_to_cart,
+from strapi_api import (add_to_cart,
                         delete_cart_item, get_cart_by_user)
-from utils import build_products_keyboard,  get_redis, edit_message,send_message
+from utils import build_products_keyboard, get_redis, edit_message, send_message, build_products_keyboard, \
+    build_products_menu
 
 redis_client = get_redis()
 
 
-def handle_message(update: Update, context: CallbackContext):
+def handle_message(update: Update, context: CallbackContext, strapi_url: str, strapi_token: str):
     user_id = update.effective_user.id
     state = redis_client.get(user_id)
     if state and state.decode('utf-8') == 'WAITING_EMAIL':
         email = update.message.text
-        url = f'{STRAPI_URL}/api/clients'
+        url = f'{strapi_url}/api/clients'
         headers = {'Content-Type': 'application/json'}
-        if STRAPI_TOKEN:
-            headers['Authorization'] = f'Bearer {STRAPI_TOKEN}'
+        if strapi_token:
+            headers['Authorization'] = f'Bearer {strapi_token}'
         payload = {'data': {'email': email}}
         resp = requests.post(url, json=payload, headers=headers, timeout=10)
         resp.raise_for_status()
@@ -39,11 +40,11 @@ def handle_pay(update: Update, context: CallbackContext):
     query.edit_message_text('Введите вашу почту для оформления заказа.')
 
 
-def handle_show_cart(update: Update, context: CallbackContext):
+def handle_show_cart(update: Update, context: CallbackContext, strapi_url: str, strapi_token: str):
     query = update.callback_query
     query.answer()
     user_id = query.from_user.id
-    cart = get_cart_by_user(user_id)
+    cart = get_cart_by_user(user_id, strapi_url=strapi_url, strapi_token=strapi_token)
     if not cart:
         return send_message(context.bot, query.message.chat_id, 'У вас пока нет корзины или она пустая.')
 
@@ -82,27 +83,38 @@ def handle_show_cart(update: Update, context: CallbackContext):
     edit_message(query, text, reply_markup)
 
 
-def handle_remove_item(update: Update, context: CallbackContext):
+def handle_remove_item(update: Update, context: CallbackContext, strapi_url, strapi_token):
     query = update.callback_query
     query.answer()
 
     _, item_id = query.data.split("_", 1)
 
-    success, msg = delete_cart_item(item_id)
+    success, msg = delete_cart_item(
+        item_id,
+        strapi_url=strapi_url,
+        strapi_token=strapi_token
+    )
 
     if not success:
         raise RuntimeError(f"Ошибка удаления: {msg}")
 
-    return handle_show_cart(update, context)
+    return handle_show_cart(update, context, strapi_url=strapi_url, strapi_token=strapi_token)
 
 
-
-def handle_add_to_cart(update: Update, context: CallbackContext):
+def handle_add_to_cart(update: Update, context: CallbackContext, strapi_url, strapi_token):
     query = update.callback_query
     query.answer()
     user_id = query.from_user.id
     document_id = query.data[len('add_'):]
-    success = add_to_cart(user_id, document_id, 1.0)
+    print(f' This is document id in handlers - {document_id}')
+    print(f'This is query.data - {query.data}')
+    success = add_to_cart(
+        user_id,
+        document_id,
+        1.0,
+        strapi_url=strapi_url,
+        strapi_token=strapi_token
+    )
     if success:
         query.edit_message_caption(
             caption=query.message.caption + '\n\nТовар добавлен в корзину!',
@@ -113,6 +125,7 @@ def handle_add_to_cart(update: Update, context: CallbackContext):
             caption=query.message.caption + '\n\nНе удалось добавить в корзину.',
             reply_markup=query.message.reply_markup
         )
+
 
 def handle_to_menu(update: Update, context: CallbackContext):
     update.callback_query.answer()

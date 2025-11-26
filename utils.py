@@ -57,3 +57,23 @@ def build_products_keyboard(products, include_cart_button=False):
             InlineKeyboardButton('Моя корзина', callback_data='cart')
         ])
     return InlineKeyboardMarkup(keyboard)
+
+def build_products_menu(strapi_url, strapi_token):
+    headers = {'Content-Type': 'application/json'}
+    if strapi_token:
+        headers['Authorization'] = f'Bearer {strapi_token}'
+
+    url = f'{strapi_url}/api/products'
+    params = {'pagination[pageSize]': 100}
+    resp = requests.get(url, params=params, headers=headers)
+    resp.raise_for_status()
+    products = resp.json().get("data", [])
+
+    keyboard = []
+    for p in products:
+        doc_id = p.get("documentId")
+        title = p.get("title", "Без названия")
+        keyboard.append([InlineKeyboardButton(title, callback_data=f"add_{doc_id}")])
+
+    return InlineKeyboardMarkup(keyboard)
+

@@ -7,9 +7,10 @@ from telegram.ext import (CallbackQueryHandler, CommandHandler, Filters,
 from telegram.error import TelegramError, Unauthorized
 
 from handlers import (handle_add_to_cart, handle_back, handle_menu,
-                      handle_message, handle_pay, handle_remove_item,
-                      handle_show_cart, handle_to_menu, start)
-from utils import get_tg_token
+                      handle_message, handle_pay,
+                      handle_show_cart, handle_to_menu, start, handle_remove_item)
+from utils import get_tg_token, get_strapi_token, get_strapi_url
+from functools import partial
 
 
 def global_error_handler(update, context):
@@ -19,6 +20,8 @@ def global_error_handler(update, context):
 
 def main():
     tg_token = get_tg_token()
+    strapi_token = get_strapi_token()
+    strapi_url = get_strapi_url()
 
     try:
         updater = Updater(tg_token)
@@ -41,14 +44,33 @@ def main():
 
     dp.add_error_handler(global_error_handler)
 
-    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
+    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, partial(
+        handle_message,
+        strapi_url=strapi_url,
+        strapi_token=strapi_token)))
 
-    dp.add_handler(CallbackQueryHandler(handle_remove_item, pattern=r'^remove_.+$'))
+    dp.add_handler(CallbackQueryHandler(
+        partial(
+        handle_remove_item,
+            strapi_url=strapi_url,
+            strapi_token=strapi_token),
+        pattern=r'^remove_.+$')
+    )
     dp.add_handler(CallbackQueryHandler(handle_to_menu, pattern=r'^to_menu$'))
     dp.add_handler(CommandHandler('start', start))
-    dp.add_handler(CallbackQueryHandler(handle_add_to_cart, pattern=r'^add_'))
+    dp.add_handler(CallbackQueryHandler(
+        partial(
+            handle_add_to_cart,
+            strapi_url=strapi_url,
+            strapi_token=strapi_token),
+        pattern=r'^add_'))
     dp.add_handler(CallbackQueryHandler(handle_back, pattern='^back$'))
-    dp.add_handler(CallbackQueryHandler(handle_show_cart, pattern='^cart$'))
+    dp.add_handler(CallbackQueryHandler(
+        partial(
+        handle_show_cart,
+            strapi_url=strapi_url,
+            strapi_token=strapi_token),
+        pattern='^cart$'))
     dp.add_handler(CallbackQueryHandler(handle_pay, pattern=r'^pay$'))
     dp.add_handler(CallbackQueryHandler(handle_menu))
 
