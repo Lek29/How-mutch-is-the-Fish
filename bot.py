@@ -9,9 +9,10 @@ from telegram.error import TelegramError, Unauthorized
 
 from handlers import (handle_add_to_cart, handle_back, handle_menu,
                       handle_message, handle_pay,
-                      handle_show_cart, handle_to_menu, start, handle_remove_item, redis_client)
-from utils import get_redis
+                      handle_show_cart, handle_to_menu, start, handle_remove_item)
+
 from functools import partial
+from redis import Redis
 
 
 def global_error_handler(update, context):
@@ -26,8 +27,13 @@ def main():
     tg_token = env.str("TG_BOT_TOKEN")
     strapi_url = env.str("STRAPI_URL", "http://localhost:1337")
     strapi_token = env.str("STRAPI_TOKEN", "")
-    redis_client = get_redis()
+    # redis_client = create_redis_client()
 
+    redis_client = Redis(
+        host = env.str('REDIS_HOST', 'localhost'),
+        port = env.int('REDIS_PORT', 6379),
+        db = env.int('REDIS_DB', 0),
+    )
     try:
         updater = Updater(tg_token)
         bot = updater.bot
@@ -49,10 +55,16 @@ def main():
 
     dp.add_error_handler(global_error_handler)
 
-    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, partial(
-        handle_message,
-        strapi_url=strapi_url,
-        strapi_token=strapi_token)))
+    dp.add_handler(
+        MessageHandler(
+            Filters.text & ~Filters.command,
+            partial(
+                handle_message,
+                    redis_client=redis_client,
+                    strapi_url=strapi_url,
+                    strapi_token=strapi_token)
+        )
+    )
 
     dp.add_handler(CallbackQueryHandler(
         partial(

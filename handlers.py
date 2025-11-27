@@ -7,13 +7,10 @@ from telegram.ext import CallbackContext
 
 from strapi_api import (add_to_cart,
                         delete_cart_item, get_cart_by_user)
-from utils import get_redis, edit_message, build_products_keyboard
+from utils import edit_message, build_products_keyboard
 
 
-redis_client = get_redis()
-
-
-def handle_message(update: Update, context: CallbackContext, strapi_url: str, strapi_token: str):
+def handle_message(update: Update, context: CallbackContext, redis_client, strapi_url: str, strapi_token: str):
     user_id = update.effective_user.id
     state = redis_client.get(user_id)
     if state and state.decode('utf-8') == 'WAITING_EMAIL':
@@ -50,12 +47,18 @@ def handle_show_cart(update: Update, context: CallbackContext, strapi_url: str, 
     user_id = query.from_user.id
     cart = get_cart_by_user(user_id, strapi_url=strapi_url, strapi_token=strapi_token)
     if not cart:
-        return send_message(context.bot, query.message.chat_id, 'У вас пока нет корзины или она пустая.')
+        return context.bot.send_message(
+            chat_id=query.message.chat_id,
+            text='У вас пока нет корзины или она пустая.'
+        )
 
     cart_items = cart.get('cart_items', [])
 
     if not cart_items or len(cart_items) == 0:
-        return send_message(context.bot, query.message.chat_id, 'Ваша корзина пустая.')
+        return context.bot.send_message(
+            chat_id=query.message.chat_id,
+            text='Ваша корзина пустая.'
+        )
 
     lines = ['Ваша корзина:\n']
     keyboard = []
@@ -114,8 +117,6 @@ def handle_add_to_cart(update: Update, context: CallbackContext, strapi_url, str
     query.answer()
     user_id = query.from_user.id
     document_id = query.data[len('add_'):]
-    print(f' This is document id in handlers - {document_id}')
-    print(f'This is query.data - {query.data}')
     success = add_to_cart(
         user_id,
         document_id,

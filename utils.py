@@ -1,28 +1,11 @@
-import redis
 import requests
-from environs import Env
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-
-
-def get_redis():
-    env = Env()
-    env.read_env()
-
-    REDIS_HOST = env.str('REDIS_HOST', 'localhost')
-    REDIS_PORT = env.int('REDIS_PORT', 6379)
-    REDIS_DB = env.int('REDIS_DB', 0)
-
-    return redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
 
 
 def edit_message(query, text, reply_markup=None):
     if getattr(query.message, 'photo', None) or getattr(query.message, 'caption', None):
         return query.edit_message_caption(caption=text, reply_markup=reply_markup)
     return query.edit_message_text(text=text, reply_markup=reply_markup)
-
-
-# def send_message(bot, chat_id, text, reply_markup=None):
-#     return bot.send_message(chat_id=chat_id, text=text, reply_markup=reply_markup)
 
 
 def build_products_keyboard(products, include_cart_button=False):
@@ -55,9 +38,9 @@ def build_products_menu(strapi_url, strapi_token):
     products = resp.json().get("data", [])
 
     keyboard = []
-    for p in products:
-        doc_id = p.get("documentId")
-        title = p.get("title", "Без названия")
+    for product in products:
+        doc_id = product.get("documentId")
+        title = product.get("title", "Без названия")
         keyboard.append([InlineKeyboardButton(title, callback_data=f"add_{doc_id}")])
 
     return InlineKeyboardMarkup(keyboard)

@@ -11,14 +11,10 @@ def delete_cart_item(document_id: str,  strapi_url: str, strapi_token: str):
     resp = requests.delete(url, headers=headers, timeout=10)
     resp.raise_for_status()
 
-    if resp.ok:
-        return True
-
-    return False, f'Ошибка удаления: {resp.status_code} {resp.text}'
+    return True
 
 
 def add_to_cart(user_id: int, product_document_id: str, quantity: float, strapi_url=None, strapi_token=None):
-    print(f'This is documentId : {product_document_id}')
     headers = {'Content-Type': 'application/json'}
     if strapi_token:
         headers['Authorization'] = f'Bearer {strapi_token}'
