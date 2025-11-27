@@ -1,6 +1,7 @@
 import sys
 import traceback
 
+from environs import Env
 from telegram.ext import (CallbackQueryHandler, CommandHandler, Filters,
                           MessageHandler, Updater)
 
@@ -8,8 +9,8 @@ from telegram.error import TelegramError, Unauthorized
 
 from handlers import (handle_add_to_cart, handle_back, handle_menu,
                       handle_message, handle_pay,
-                      handle_show_cart, handle_to_menu, start, handle_remove_item)
-from utils import get_tg_token, get_strapi_token, get_strapi_url, get_redis
+                      handle_show_cart, handle_to_menu, start, handle_remove_item, redis_client)
+from utils import get_redis
 from functools import partial
 
 
@@ -19,9 +20,12 @@ def global_error_handler(update, context):
 
 
 def main():
-    tg_token = get_tg_token()
-    strapi_token = get_strapi_token()
-    strapi_url = get_strapi_url()
+    env = Env()
+    env.read_env('.env')
+
+    tg_token = env.str("TG_BOT_TOKEN")
+    strapi_url = env.str("STRAPI_URL", "http://localhost:1337")
+    strapi_token = env.str("STRAPI_TOKEN", "")
     redis_client = get_redis()
 
     try:

@@ -7,7 +7,7 @@ from telegram.ext import CallbackContext
 
 from strapi_api import (add_to_cart,
                         delete_cart_item, get_cart_by_user)
-from utils import get_redis, edit_message, send_message, build_products_keyboard
+from utils import get_redis, edit_message, build_products_keyboard
 
 
 redis_client = get_redis()

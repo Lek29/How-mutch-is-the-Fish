@@ -4,26 +4,9 @@ from environs import Env
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 
-def get_env():
-    env = Env()
-    env.read_env('.env')
-    return env
-
-
-def get_tg_token():
-    return get_env().str('TG_BOT_TOKEN')
-
-
-def get_strapi_url():
-    return get_env().str('STRAPI_URL', 'http://localhost:1337')
-
-
-def get_strapi_token():
-    return get_env().str('STRAPI_TOKEN', '')
-
-
 def get_redis():
-    env = get_env()
+    env = Env()
+    env.read_env()
 
     REDIS_HOST = env.str('REDIS_HOST', 'localhost')
     REDIS_PORT = env.int('REDIS_PORT', 6379)
@@ -38,8 +21,8 @@ def edit_message(query, text, reply_markup=None):
     return query.edit_message_text(text=text, reply_markup=reply_markup)
 
 
-def send_message(bot, chat_id, text, reply_markup=None):
-    return bot.send_message(chat_id=chat_id, text=text, reply_markup=reply_markup)
+# def send_message(bot, chat_id, text, reply_markup=None):
+#     return bot.send_message(chat_id=chat_id, text=text, reply_markup=reply_markup)
 
 
 def build_products_keyboard(products, include_cart_button=False):
