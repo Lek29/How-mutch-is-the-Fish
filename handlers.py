@@ -6,7 +6,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import CallbackContext
 
 from strapi_api import (add_to_cart,
-                        delete_cart_item, get_cart_by_user)
+                        delete_cart_item, get_cart_by_user, create_cart_in_strapi)
 from utils import edit_message, build_products_keyboard
 
 
@@ -115,15 +115,25 @@ def handle_remove_item(update: Update, context: CallbackContext, strapi_url, str
 def handle_add_to_cart(update: Update, context: CallbackContext, strapi_url, strapi_token):
     query = update.callback_query
     query.answer()
+
     user_id = query.from_user.id
-    document_id = query.data[len('add_'):]
+    product_id = query.data[len('add_'):]
+
+    cart = get_cart_by_user(user_id, strapi_url=strapi_url, strapi_token=strapi_token)
+
+    if not cart:
+        cart = create_cart_in_strapi(user_id, strapi_url=strapi_url, strapi_token=strapi_token)
+
+    cart_id = cart["id"]
+
     success = add_to_cart(
-        user_id,
-        document_id,
+        cart_id,
+        product_id,
         1.0,
-        strapi_url=strapi_url,
-        strapi_token=strapi_token
+        strapi_url,
+        strapi_token
     )
+
     if success:
         query.edit_message_caption(
             caption=query.message.caption + '\n\nТовар добавлен в корзину!',
