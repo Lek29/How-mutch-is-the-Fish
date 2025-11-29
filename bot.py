@@ -15,11 +15,6 @@ from functools import partial
 from redis import Redis
 
 
-def global_error_handler(update, context):
-    print("Необработанная ошибка в handler:", file=sys.stderr)
-    traceback.print_exception(type(context.error), context.error, context.error.__traceback__)
-
-
 def main():
     env = Env()
     env.read_env('.env')
@@ -27,7 +22,6 @@ def main():
     tg_token = env.str("TG_BOT_TOKEN")
     strapi_url = env.str("STRAPI_URL", "http://localhost:1337")
     strapi_token = env.str("STRAPI_TOKEN", "")
-    # redis_client = create_redis_client()
 
     redis_client = Redis(
         host = env.str('REDIS_HOST', 'localhost'),
@@ -52,8 +46,6 @@ def main():
         print(f'Неизвестная ошибка при создании бота: {e}')
         return
     dp = updater.dispatcher
-
-    dp.add_error_handler(global_error_handler)
 
     dp.add_handler(
         MessageHandler(
