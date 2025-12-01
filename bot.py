@@ -1,6 +1,3 @@
-import sys
-import traceback
-
 from environs import Env
 from telegram.ext import (CallbackQueryHandler, CommandHandler, Filters,
                           MessageHandler, Updater)
@@ -58,32 +55,57 @@ def main():
         )
     )
 
-    dp.add_handler(CallbackQueryHandler(
-        partial(
-        handle_remove_item,
-            strapi_url=strapi_url,
-            strapi_token=strapi_token),
-        pattern=r'^remove_.+$')
+    dp.add_handler(
+        CallbackQueryHandler(
+            partial(handle_remove_item, strapi_url=strapi_url, strapi_token=strapi_token),
+                pattern=r'^remove_.+$')
     )
-    dp.add_handler(CallbackQueryHandler(handle_to_menu, pattern=r'^to_menu$'))
-    dp.add_handler(CommandHandler('start', start))
-    dp.add_handler(CallbackQueryHandler(
-        partial(
-            handle_add_to_cart,
-            strapi_url=strapi_url,
-            strapi_token=strapi_token),
-        pattern=r'^add_'))
-    dp.add_handler(CallbackQueryHandler(handle_back, pattern='^back$'))
-    dp.add_handler(CallbackQueryHandler(
-        partial(
-        handle_show_cart,
-            strapi_url=strapi_url,
-            strapi_token=strapi_token),
-        pattern='^cart$'))
-    dp.add_handler(CallbackQueryHandler(
-        partial(handle_pay, redis_client=redis_client)
-        , pattern=r'^pay$'))
-    dp.add_handler(CallbackQueryHandler(handle_menu))
+
+    dp.add_handler(
+        CallbackQueryHandler(
+            partial(handle_to_menu, strapi_url=strapi_url),
+                    pattern=r'^to_menu$')
+        )
+
+
+    dp.add_handler(
+        CommandHandler(
+            'start',
+            partial(start, strapi_url=strapi_url)
+        )
+    )
+
+    dp.add_handler(
+        CallbackQueryHandler(
+            partial(handle_add_to_cart, strapi_url=strapi_url, strapi_token=strapi_token),
+                pattern=r'^add_')
+        )
+
+
+    dp.add_handler(
+        CallbackQueryHandler(
+            partial(handle_back, strapi_url=strapi_url), pattern='^back$')
+        )
+
+
+    dp.add_handler(
+        CallbackQueryHandler(
+            partial(handle_show_cart, strapi_url=strapi_url, strapi_token=strapi_token),
+                pattern='^cart$')
+    )
+
+    dp.add_handler(
+        CallbackQueryHandler(
+            partial(handle_pay, redis_client=redis_client),
+                pattern=r'^pay$')
+    )
+
+    dp.add_handler(
+        CallbackQueryHandler(
+            partial(handle_menu, strapi_url=strapi_url),
+        )
+    )
+
 
     try:
         updater.start_polling()

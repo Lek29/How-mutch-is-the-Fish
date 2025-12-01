@@ -101,10 +101,16 @@ def handle_remove_item(update: Update, context: CallbackContext, strapi_url, str
         strapi_url=strapi_url,
         strapi_token=strapi_token
     )
-    query.edit_message_caption(
-        caption="Товар удалён!",
-        reply_markup=None
-    )
+    if query.message.photo:
+        query.edit_message_caption(
+            caption="Товар удалён!",
+            reply_markup=None
+        )
+    else:
+        query.edit_message_text(
+            text="Товар удалён!",
+            reply_markup=None
+        )
 
     if not success:
         raise RuntimeError("Ошибка удаления")
@@ -146,12 +152,12 @@ def handle_add_to_cart(update: Update, context: CallbackContext, strapi_url, str
         )
 
 
-def handle_to_menu(update: Update, context: CallbackContext):
+def handle_to_menu(update: Update, context: CallbackContext, strapi_url: str):
     update.callback_query.answer()
-    start(update, context)
+    start(update, context, strapi_url)
 
 
-def start(update: Update, context: CallbackContext):
+def start(update: Update, context: CallbackContext, strapi_url: str):
     if update.message:
         chat = update.message.chat
         chat_id = update.message.chat_id
@@ -163,7 +169,7 @@ def start(update: Update, context: CallbackContext):
     else:
         return
     user_id = update.effective_user.id
-    products = get_products()
+    products = get_products(strapi_url)
     if not products:
         if reply_target:
             reply_target.reply_text('Ошибка: не удалось загрузить товары.')
@@ -177,14 +183,15 @@ def start(update: Update, context: CallbackContext):
     else:
         context.bot.send_message(chat_id=chat_id, text=text, reply_markup=reply_markup)
 
-def handle_menu(update: Update, context: CallbackContext):
+
+def handle_menu(update: Update, context: CallbackContext, strapi_url: str):
     query = update.callback_query
     query.answer()
 
     user_id = query.from_user.id
     document_id = query.data
 
-    product = get_product_by_id(document_id)
+    product = get_product_by_id(document_id, strapi_url)
     if not product:
         raise LookupError("Товар не найден")
 
@@ -195,7 +202,7 @@ def handle_menu(update: Update, context: CallbackContext):
     image = product.get('image')
     image_url = None
     if image and image.get('url'):
-        image_url = 'http://localhost:1337' + image['url']
+        image_url = strapi_url + image['url']
 
     caption = f'*{title}*\n\n{description}\n\n *Цена:* {price} ₽'
 
@@ -234,18 +241,18 @@ def handle_menu(update: Update, context: CallbackContext):
         )
 
 
-def handle_back(update: Update, context: CallbackContext):
+def handle_back(update: Update, context: CallbackContext, strapi_url: str):
     query = update.callback_query
     query.answer()
     context.bot.delete_message(
         chat_id=query.message.chat_id,
         message_id=query.message.message_id
     )
-    start(update, context)
+    start(update, context, strapi_url)
 
 
-def get_products():
-    url = 'http://localhost:1337/api/products'
+def get_products(strapi_url: str):
+    url = f'{strapi_url}/api/products'
     params = {'populate': 'image'}
 
     response = requests.get(url, params=params, timeout=10)
@@ -254,8 +261,8 @@ def get_products():
     return response.json()['data']
 
 
-def get_product_by_id(document_id):
-    url = f'http://localhost:1337/api/products/{document_id}'
+def get_product_by_id(document_id, strapi_url: str):
+    url = f'{strapi_url}/api/products/{document_id}'
     params = {'populate': 'image'}
 
     response = requests.get(url, params=params, timeout=10)
